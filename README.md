@@ -48,16 +48,18 @@ VPNPORT=$(/usr/bin/natpmpc -a 1 0 tcp 60 -g 10.2.0.1 | grep "Mapped" | awk '{ pr
 echo "ProtonVPN public IP/Port: ${VPNIP}:${VPNPORT}"
 
 # json file for current config
+# create if non-existent
 jsonConfig="/data/lnd/proton.json"
+[ ! -f $jsonConfig ] && /usr/bin/touch $jsonConfig
 
 # read config and compare port numbers
 # exit if ports match (= unchanged)
 currentVPNPORT=$(/usr/bin/jq -r '.vpnport' $jsonConfig)
-[ "$currentVPNPORT" = "$VPNPORT" ] && echo "no new vpn config found" && exit 1
+[ "$currentVPNPORT" = "$VPNPORT" ] && echo "VPN config still valid" && exit 1
 
 # if there has been a new port assigned,
 # save new config to json
-echo "new vpn config found:"
+echo "New VPN config found:"
 /usr/bin/jq -n --arg vpnip "${VPNIP}" --arg vpnport "${VPNPORT}" "{vpnip: \"${VPNIP}\", vpnport: \"${VPNPORT}\"}" | /usr/bin/tee $jsonConfig
 
 # ufw: open new port, rm old port
