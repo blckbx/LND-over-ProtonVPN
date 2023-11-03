@@ -74,14 +74,11 @@ echo "new vpn config found:"
 # reading vpn config from json file
 
 # json config
-jsonConfig="/data/lnd/protonkeepalive.json"
+jsonConfig="/data/lnd/proton.json"
 
 # read vars
 VPNIP=$(/usr/bin/jq -r '.vpnip' $jsonConfig)
 VPNPORT=$(/usr/bin/jq -r '.vpnport' $jsonConfig)
-
-# debug
-#echo "${VPNIP}:${VPNPORT}"
 
 # verify and construct lnd startup command
 [ -z "$VPNIP" ] || [ -z "$VPNPORT" ] \
