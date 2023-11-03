@@ -35,16 +35,13 @@ VPNIP=$(/usr/bin/natpmpc -a 1 0 udp 60 -g 10.2.0.1 | grep "Public" | awk '{ prin
 VPNPORT=$(/usr/bin/natpmpc -a 1 0 tcp 60 -g 10.2.0.1 | grep "Mapped" | awk '{ print $4 }')
 echo "ProtonVPN public IP/Port: ${VPNIP}:${VPNPORT}"
 
-
 # json file for current config
 jsonConfig="/data/lnd/protonportfwd.json"
-
 
 # read config and compare port numbers
 # exit if ports match (= unchanged)
 currentVPNPORT=$(/usr/bin/jq -r '.vpnport' $jsonConfig)
 [ "$currentVPNPORT" = "$VPNPORT" ] && echo "no new vpn config found" && exit 1
-
 
 # if there has been a new port assigned,
 # save new config to json
