@@ -8,7 +8,7 @@ System Requirements:
 - `sudo apt install natpmpc`
 - Connected to ProtonVPN server capable of NAT-MMP (🔁)
 
-⚠️ Note: This is not yet tested thoroughly!
+⚠️ **Note: This is not tested thoroughly yet!**
 
 This proposal tries to create a sustainable environment for tunneling a hybrid LND node over ProtonVPN.
 For this to work we need to get hold of some circumstances that come with running ProtonVPN (as of Nov 2023):
