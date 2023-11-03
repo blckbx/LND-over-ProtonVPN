@@ -3,11 +3,11 @@
 This proposal tries to create a sustainable environment for tunneling a hybrid LND node over ProtonVPN.
 For this to work we need to get hold of some circumstances that come with running ProtonVPN (as of Nov 2023):
 
-ProtonVPN for Linux now comes with port-forwarding offered by selected vpn servers. ProtonVPN assigns forward-ports for 60 seconds by default if not kept alive. `natpmpc` provides us with an opportunity to keep the assigned port alive for a longer time period.
+ProtonVPN for Linux comes with port-forwarding support for selected VPN servers (v1.0.3-2). By default ProtonVPN assigns forwarded-ports for 60 seconds if not kept alive. `natpmpc` provides us with an opportunity to keep the assigned port alive for a longer time period.
 
 This means we need to prepare for two problematic scenarios:
 1) Keep-alive script stops unexpectedly and we lose our assigned port
-2) System restart is required which leads us to 1)
+2) System restart is required which leads us to 1.
 
 What are the consequences of these scenarios:
 Rotated ports invalidates the current LND and network config (firewall setting) we run the node with (listening port and set external port). Therefore we need to restart LND and adjust firewall config with the new VPN config (IP/port) that has been assigned. To prevent having to modify `lnd.conf` every time new VPN data is assigned, we exclude necessary parameters from `lnd.conf` and run them as startup flags.
@@ -79,3 +79,8 @@ VPNPORT=$(/usr/bin/jq -r '.vpnport' $jsonConfig)
         || echo "/usr/local/bin/lnd --listen=0.0.0.0:$VPNPORT --externalip=$VPNIP:$VPNPORT"
 
 ```
+
+Ressources:
+1. https://protonvpn.com/support/linux-vpn-setup
+2. https://protonvpn.com/support/port-forwarding-manual-setup/#linux
+3. https://www.reddit.com/r/ProtonVPN/comments/10owypt/successful_port_forward_on_debian_wdietpi_using/?rdt=34775
