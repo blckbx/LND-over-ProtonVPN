@@ -21,13 +21,12 @@ This means we need to prepare for two problematic scenarios:
 2) System restarts are inevitable which leads us to 1.
 
 What are the consequences of these scenarios:
-Rotated ports invalidates the current LND and network config (firewall setting) we run the node with (listening port and set external port). Therefore we need to restart LND and adjust firewall config with the new VPN config (IP/port) that has been assigned. To prevent having to modify `lnd.conf` every time new VPN data is assigned, we exclude necessary parameters from `lnd.conf` and run them as startup flags.
+Rotated ports invalidates the current LND and network config (firewall setting) we run the node with (listening port and set external port). Therefore we need to restart LND and adjust firewall config with the new VPN config (IP/port) that has been assigned. To prevent having to modify `lnd.conf` every time new VPN data is assigned, we exclude necessary parameters from `lnd.conf` and run them as startup flags in systemd service.
 
 ### Proposed Solution
 To manage this automatically, we create two shell scripts: 
-- `protonkeepalive.sh`: runs as cronjob every 50 secs to keepalive the assigned VPN port by fetching data from `natpmpc` and saving VPN IP/port to file: `proton.json`
-- `protonlnd.sh`: reading VPN IP/port from file, constructing startup flags for `lnd`: `--listen=0.0.0.0:(vpnport) ---externalip=(vpnip):(vpnport)`
-- Systemd service `lnd.service` requires new `ExecStart` command: `ExecStart=/usr/bin/sh /usr/local/bin/protonlnd.sh`
+- `protonkeepalive.sh`: runs as cronjob every 50 secs to keepalive the assigned VPN port by fetching data from `natpmpc` and saving VPN IP/port to env file: `proton`
+- `protonlnd.service`: reading VPN IP/port from environment file, constructing startup flags for `lnd --listen=0.0.0.0:(vpnport) ---externalip=(vpnip):(vpnport)`
 
 ### Shell Scripts
 Now here are the shell scripts:
@@ -47,20 +46,21 @@ VPNIP=$(/usr/bin/natpmpc -a 1 0 udp 60 -g 10.2.0.1 | grep "Public" | awk '{ prin
 VPNPORT=$(/usr/bin/natpmpc -a 1 0 tcp 60 -g 10.2.0.1 | grep "Mapped" | awk '{ print $4 }')
 echo "ProtonVPN public IP/Port: ${VPNIP}:${VPNPORT}"
 
-# json file for current config
-# create if non-existent
-jsonConfig="/data/lnd/proton.json"
-[ ! -f $jsonConfig ] && /usr/bin/touch $jsonConfig
+# env file for current config
+# create file if non-existent
+envConfig="/data/lnd/proton"
+[ ! -f $envConfig ] && /usr/bin/touch $envConfig
 
 # read config and compare port numbers
 # exit if ports match (= unchanged)
-currentVPNPORT=$(/usr/bin/jq -r '.vpnport' $jsonConfig)
+currentVPNPORT=$(/usr/bin/grep "VPNPORT" $envConfig | /usr/bin/cut -d '=' -f2)
 [ "$currentVPNPORT" = "$VPNPORT" ] && echo "VPN config still valid" && exit 0
 
 # if there has been a new port assigned,
-# save new config to json
+# save new config to env file
 echo "New VPN config found:"
-/usr/bin/jq -n --arg vpnip "${VPNIP}" --arg vpnport "${VPNPORT}" "{vpnip: \"${VPNIP}\", vpnport: \"${VPNPORT}\"}" | /usr/bin/tee $jsonConfig
+echo "VPNIP=${VPNIP}\nVPNPORT=${VPNPORT}" | /usr/bin/tee $envConfig
+
 
 # ufw: open new port, rm old port
 /usr/sbin/ufw allow $VPNPORT
@@ -68,25 +68,11 @@ echo "New VPN config found:"
 
 ```
 
-`protonlnd.sh`
-```sh
-#!/bin/sh
-
-# LND startup script called by systemd service: lnd.service
-# reading vpn config from json file
-
-# json config
-jsonConfig="/data/lnd/proton.json"
-
-# read vars
-VPNIP=$(/usr/bin/jq -r '.vpnip' $jsonConfig)
-VPNPORT=$(/usr/bin/jq -r '.vpnport' $jsonConfig)
-
-# verify and construct lnd startup command
-[ -z "$VPNIP" ] || [ -z "$VPNPORT" ] \
-        && echo "VPNIP or VPNPORT empty" \
-        || /usr/local/bin/lnd --listen=0.0.0.0:$VPNPORT --externalip=$VPNIP:$VPNPORT
-
+`protonlnd.service`
+```
+[Service]
+EnvironmentFiles=/data/lnd/proton
+ExecStart=/usr/local/bin/lnd --listen=0.0.0.0:$VPNPORT --externalip=$VPNIP:$VPNPORT
 ```
 
 ### Future Improvements:
