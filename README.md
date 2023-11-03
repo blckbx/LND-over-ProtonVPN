@@ -6,7 +6,7 @@ System Requirements:
 - LND datadir: `/data/lnd`
 - ProtonVPN v1.0.3-2 installed
 - `sudo apt install natpmpc`
-- Connected to server providing NAT-MMP (🔁)
+- Connected to ProtonVPN server capable of NAT-MMP (🔁)
 
 ⚠️ Note: This is not yet tested thoroughly!
 
@@ -26,7 +26,7 @@ Rotated ports invalidates the current LND and network config (firewall setting) 
 ### Proposed Solution
 To manage this automatically, we create two shell scripts: 
 - `protonkeepalive.sh`: runs as cronjob every 50 secs to keepalive the assigned VPN port by fetching data from `natpmpc` and saving VPN IP/port to file: `proton.json`
-- `protonlnd.sh`: reading VPN IP/port from file, constructing startup parameters to run `lnd` with flags: `--listen=0.0.0.0:(vpnport)` and `---externalip=(vpnip):(vpnport)`
+- `protonlnd.sh`: reading VPN IP/port from file, constructing startup flags for `lnd`: `--listen=0.0.0.0:(vpnport) ---externalip=(vpnip):(vpnport)`
 - Systemd service `lnd.service` requires new `ExecStart` command: `ExecStart=/usr/bin/sh /usr/local/bin/protonlnd.sh`
 
 ### Shell Scripts
