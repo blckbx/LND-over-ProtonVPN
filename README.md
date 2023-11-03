@@ -55,7 +55,7 @@ jsonConfig="/data/lnd/proton.json"
 # read config and compare port numbers
 # exit if ports match (= unchanged)
 currentVPNPORT=$(/usr/bin/jq -r '.vpnport' $jsonConfig)
-[ "$currentVPNPORT" = "$VPNPORT" ] && echo "VPN config still valid" && exit 1
+[ "$currentVPNPORT" = "$VPNPORT" ] && echo "VPN config still valid" && exit 0
 
 # if there has been a new port assigned,
 # save new config to json
