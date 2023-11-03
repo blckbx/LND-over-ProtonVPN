@@ -21,12 +21,12 @@ This means we need to prepare for two problematic scenarios:
 2) System restarts are inevitable which leads us to 1.
 
 What are the consequences of these scenarios:
-Rotated ports invalidates the current LND and network config (firewall setting) we run the node with (listening port and set external port). Therefore we need to restart LND and adjust firewall config with the new VPN config (IP/port) that has been assigned. To prevent having to modify `lnd.conf` every time new VPN data is assigned, we exclude necessary parameters from `lnd.conf` and run them as startup flags in systemd service.
+Rotated ports invalidates the current LND and network config (firewall setting) we run the node with (listening port and set external port). Therefore we need to restart LND and adjust firewall config with the new VPN config (IP/port). To prevent having to modify `lnd.conf` every time new VPN data is assigned, we exclude necessary parameters from `lnd.conf` and run them as startup flags in systemd service.
 
 ### Proposed Solution
-To manage this automatically, we create two shell scripts: 
+To manage this automatically, we create a shell script and modify systemd service: 
 - `protonkeepalive.sh`: runs as cronjob every 50 secs to keepalive the assigned VPN port by fetching data from `natpmpc` and saving VPN IP/port to env file: `proton`
-- `protonlnd.service`: reading VPN IP/port from environment file, constructing startup flags for `lnd --listen=0.0.0.0:(vpnport) ---externalip=(vpnip):(vpnport)`
+- `lnd.service`: reading VPN IP/port from environment file, constructing startup flags for `lnd --listen=0.0.0.0:(vpnport) ---externalip=(vpnip):(vpnport)`
 
 ### Shell Scripts
 Now here are the shell scripts:
@@ -68,7 +68,7 @@ echo "VPNIP=${VPNIP}\nVPNPORT=${VPNPORT}" | /usr/bin/tee $envConfig
 
 ```
 
-`protonlnd.service`
+`lnd.service`
 ```
 [Service]
 EnvironmentFiles=/data/lnd/proton
