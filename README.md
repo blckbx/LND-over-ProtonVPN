@@ -25,7 +25,9 @@ Rotated ports invalidates the current LND and network config (firewall setting) 
 
 ### Proposed Solution
 To manage this automatically, we create a shell script and modify systemd service: 
+- We put two shell scripts in `sudo mkdir /usr/local/bin/proton`
 - `protonkeepalive.sh`: runs as cronjob every 50 secs to keepalive the assigned VPN port by fetching data from `natpmpc` and saving VPN IP/port to env file: `proton`
+- `protonprecheck.sh`: runs some mandatory checks on proton config file before starting up lnd. If checks fail, lnd won't start up.
 - `lnd.service`: reading VPN IP/port from environment file, constructing startup flags for `lnd --listen=0.0.0.0:(vpnport) ---externalip=(vpnip):(vpnport)`
 
 ### Shell Scripts
@@ -39,7 +41,7 @@ Now here are the shell scripts:
 # script has to run every < 60s to prevent port rotation
 
 # Add the following to sudo crontab -e
-# * * * * * sleep 50; /bin/sh /usr/local/bin/protonkeepalive.sh 2&>1 | /usr/bin/logger -t protonvpn
+# * * * * * sleep 50; /bin/sh /usr/local/bin/proton/protonkeepalive.sh 2&>1 | /usr/bin/logger -t protonvpn
 
 # fetch vpn ip and port from natpmpc
 VPNIP=$(/usr/bin/natpmpc -a 1 0 udp 60 -g 10.2.0.1 | grep "Public" | awk '{ print $5 }')
@@ -68,17 +70,40 @@ echo "VPNIP=${VPNIP}\nVPNPORT=${VPNPORT}" | /usr/bin/tee $envConfig
 
 ```
 
+`protonprecheck.sh`
+```sh
+#!/bin/sh
+
+# Simple pre-check for empty env vars
+# in /data/lnd/proton
+
+# define env file
+envConfig="/data/lnd/proton"
+
+# exit on missing file
+[ ! -f $envConfig ] && exit 1
+
+# exit on missing key/value pairs
+VPNIP=$(/usr/bin/grep "VPNIP" $envConfig | /usr/bin/cut -d '=' -f2)
+VPNPORT=$(/usr/bin/grep "VPNPORT" $envConfig | /usr/bin/cut -d '=' -f2)
+
+[ -z "$VPNIP" ] && exit 1
+[ -z "$VPNPORT" ] && exit 1
+
+/usr/bin/echo "proton config pre-check OK"
+```
+
 `lnd.service`
 ```
 [Service]
 EnvironmentFiles=/data/lnd/proton
+ExecStartPre=/usr/local/bin/proton/protonprecheck.sh
 ExecStart=/usr/local/bin/lnd --listen=0.0.0.0:$VPNPORT --externalip=$VPNIP:$VPNPORT
 ```
 
 ### Future Improvements:
-- more safety checks for edge cases (empty config file, empty vars, ...)
 - split-tunneling for real hybrid mode (Tor outside of the tunnel)
-- process for SHTF at runtime
+- process for SHTF at runtime (connection loss, random port rotation)
 
 Ressources:
 1. https://protonvpn.com/support/linux-vpn-setup
