@@ -33,6 +33,15 @@ To manage this automatically, we create a shell script and modify systemd servic
 ### Shell Scripts
 Now here are the shell scripts:
 
+Setup:
+```bash
+$ sudo mkdir /usr/local/bin/proton
+$ sudo touch /usr/local/bin/proton/protonkeepalive.sh
+$ sudo touch /usr/local/bin/proton/protonprecheck.sh
+$ sudo chmod +x /usr/local/bin/proton/protonprecheck.sh
+$ sudo touch /data/lnd/proton
+```
+
 `protonkeepalive.sh`
 ```sh
 #!/bin/sh
@@ -98,7 +107,7 @@ VPNPORT=$(/usr/bin/grep "VPNPORT" $envConfig | /usr/bin/cut -d '=' -f2)
 [Service]
 EnvironmentFiles=/data/lnd/proton
 ExecStartPre=/usr/local/bin/proton/protonprecheck.sh
-ExecStart=/usr/local/bin/lnd --listen=0.0.0.0:$VPNPORT --externalip=$VPNIP:$VPNPORT
+ExecStart=/usr/local/bin/lnd --listen=0.0.0.0:${VPNPORT} --externalip=${VPNIP}:${VPNPORT}
 ```
 
 ### Future Improvements:
