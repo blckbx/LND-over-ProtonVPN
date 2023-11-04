@@ -39,7 +39,12 @@ $ sudo mkdir /usr/local/bin/proton
 $ sudo touch /usr/local/bin/proton/protonkeepalive.sh
 $ sudo touch /usr/local/bin/proton/protonprecheck.sh
 $ sudo chmod +x /usr/local/bin/proton/protonprecheck.sh
+
 $ sudo touch /data/lnd/proton
+
+$ sudo crontab -e
+# add line:
+* * * * * sleep 50; /bin/sh /usr/local/bin/proton/protonkeepalive.sh 2&>1 | /usr/bin/logger -t protonvpn
 ```
 
 `protonkeepalive.sh`
