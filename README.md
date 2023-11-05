@@ -75,7 +75,7 @@ currentVPNPORT=$(/usr/bin/grep "VPNPORT" $envConfig | /usr/bin/cut -d '=' -f2)
 # if there has been a new port assigned,
 # save new config to env file
 /usr/bin/echo "New VPN config found:"
-/usr/bin/echo "VPNIP=${VPNIP}\nVPNPORT=${VPNPORT}" | /usr/bin/tee $envConfig
+/usr/bin/echo -e "VPNIP=${VPNIP}\nVPNPORT=${VPNPORT}" | /usr/bin/tee $envConfig
 
 
 # ufw: open new port, rm old port
